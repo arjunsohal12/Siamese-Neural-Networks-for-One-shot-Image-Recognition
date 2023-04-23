@@ -9,6 +9,11 @@ import tensorflow as tf
 import uuid
 from keras.metrics import Precision, Recall
 
+
+gpus = tf.config.experimental.list_physical_devices('GPU')
+for gpu in gpus:
+    tf.config.experimental.set_memory_growth(gpu, True)
+
 # Creating Dirs for image storage
 
 POS_PATH = os.path.join('data', 'positive')
@@ -223,7 +228,7 @@ def make_siamese_model():
 
     return Model(inputs=[input_image, validation_image], outputs=classifier, name='SiameseNetwork')
 
-siamese_model = make_siamese_model()
+# siamese_model = make_siamese_model()
 
 print('train')
 # Training
@@ -231,9 +236,9 @@ print('train')
 binary_cross_loss = tf.losses.BinaryCrossentropy()
 opt = tf.keras.optimizers.Adam(1e-4) # 0.0001
 
-checkpoint_dir = './training_checkpoints'
-checkpoint_prefix = os.path.join(checkpoint_dir, 'ckpt')
-checkpoint = tf.train.Checkpoint(opt=opt, siamese_model=siamese_model)
+# checkpoint_dir = './training_checkpoints'
+# checkpoint_prefix = os.path.join(checkpoint_dir, 'ckpt')
+# checkpoint = tf.train.Checkpoint(opt=opt, siamese_model=siamese_model)
 
 test_batch = train_data.as_numpy_iterator()
 
@@ -292,42 +297,49 @@ def train(data, EPOCHS):
             checkpoint.save(file_prefix=checkpoint_prefix)
 
 # Training Model
-EPOCHS = 50
+EPOCHS = 10
 print('training')
-train(train_data, EPOCHS)
+# train(train_data, EPOCHS)
 
 print('eval')
 # Evaluating Model
 
 test_input, test_val, y_true = test_data.as_numpy_iterator().next()
-y_hat = siamese_model.predict([test_input, test_val])
-
-# Creating a metric object
-m = Recall()
-
-# Calculating the recall value
-m.update_state(y_true, y_hat)
-
-# Return Recall Result
-m.result().numpy()
-
-# Creating a metric object
-m = Precision()
-
-# Calculating the recall value
-m.update_state(y_true, y_hat)
-
-# Return Recall Result
-m.result().numpy()
+# # y_hat = siamese_model.predict([test_input, test_val])
+#
+# # Creating a metric object
+# m = Recall()
+#
+# # Calculating the recall value
+# m.update_state(y_true, y_hat)
+#
+# # Return Recall Result
+# m.result().numpy()
+#
+# # Creating a metric object
+# m = Precision()
+#
+# # Calculating the recall value
+# m.update_state(y_true, y_hat)
+#
+# # Return Recall Result
+# m.result().numpy()
 
 r = Recall()
 p = Precision()
 
-for test_input, test_val, y_true in test_data.as_numpy_iterator():
-    yhat = siamese_model.predict([test_input, test_val])
-    r.update_state(y_true, yhat)
-    p.update_state(y_true,yhat)
+# for test_input, test_val, y_true in test_data.as_numpy_iterator():
+#     yhat = siamese_model.predict([test_input, test_val])
+#     r.update_state(y_true, yhat)
+#     p.update_state(y_true,yhat)
 
 print(r.result().numpy(), p.result().numpy())
 
-siamese_model.save('siamesemodelv2.h5')
+#siamese_model.save('siamesemodelv2.h5')
+
+
+siamese_model = tf.keras.models.load_model('siamesemodelv2.h5', custom_objects={'L1Dist': L1Dist, 'BinaryCrossentropy': tf.losses.BinaryCrossentropy })
+
+print(siamese_model.predict([test_input, test_val]))
+
+siamese_model.summary()
