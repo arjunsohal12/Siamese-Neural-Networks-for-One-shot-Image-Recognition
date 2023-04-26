@@ -116,23 +116,6 @@ def data_aug(img):
 
 
 
-
-
-# img_path = os.path.join(ANC_PATH, '70806d18-e16d-11ed-9fc1-fac5a3bfe9af.jpg')
-# img = cv2.imread(img_path)
-# augmented_images = data_aug(img)
-#
-# for image in augmented_images:
-#     cv2.imwrite(os.path.join(ANC_PATH, '{}.jpg'.format(uuid.uuid1())), image.numpy())
-print('augmenting')
-# for file_name in os.listdir(os.path.join(POS_PATH)):
-#     img_path = os.path.join(POS_PATH, file_name)
-#     img = cv2.imread(img_path)
-#     augmented_images = data_aug(img)
-#
-#     for image in augmented_images:
-#         cv2.imwrite(os.path.join(POS_PATH, '{}.jpg'.format(uuid.uuid1())), image.numpy())
-
 print('creating datasets')
 anchor = tf.data.Dataset.list_files(ANC_PATH+'/*.jpg').take(300)
 positive = tf.data.Dataset.list_files(POS_PATH + '/*.jpg').take(300)
@@ -236,9 +219,9 @@ print('train')
 binary_cross_loss = tf.losses.BinaryCrossentropy()
 opt = tf.keras.optimizers.Adam(1e-4) # 0.0001
 
-# checkpoint_dir = './training_checkpoints'
-# checkpoint_prefix = os.path.join(checkpoint_dir, 'ckpt')
-# checkpoint = tf.train.Checkpoint(opt=opt, siamese_model=siamese_model)
+checkpoint_dir = './training_checkpoints'
+checkpoint_prefix = os.path.join(checkpoint_dir, 'ckpt')
+checkpoint = tf.train.Checkpoint(opt=opt, siamese_model=siamese_model)
 
 test_batch = train_data.as_numpy_iterator()
 
@@ -305,41 +288,36 @@ print('eval')
 # Evaluating Model
 
 test_input, test_val, y_true = test_data.as_numpy_iterator().next()
-# # y_hat = siamese_model.predict([test_input, test_val])
-#
-# # Creating a metric object
-# m = Recall()
-#
-# # Calculating the recall value
-# m.update_state(y_true, y_hat)
-#
-# # Return Recall Result
-# m.result().numpy()
-#
-# # Creating a metric object
-# m = Precision()
-#
-# # Calculating the recall value
-# m.update_state(y_true, y_hat)
-#
-# # Return Recall Result
-# m.result().numpy()
+y_hat = siamese_model.predict([test_input, test_val])
+
+# Creating a metric object
+m = Recall()
+
+# Calculating the recall value
+m.update_state(y_true, y_hat)
+
+# Return Recall Result
+m.result().numpy()
+
+# Creating a metric object
+m = Precision()
+
+# Calculating the recall value
+m.update_state(y_true, y_hat)
+
+# Return Recall Result
+m.result().numpy()
 
 r = Recall()
 p = Precision()
 
-# for test_input, test_val, y_true in test_data.as_numpy_iterator():
-#     yhat = siamese_model.predict([test_input, test_val])
-#     r.update_state(y_true, yhat)
-#     p.update_state(y_true,yhat)
+for test_input, test_val, y_true in test_data.as_numpy_iterator():
+    yhat = siamese_model.predict([test_input, test_val])
+    r.update_state(y_true, yhat)
+    p.update_state(y_true,yhat)
 
 print(r.result().numpy(), p.result().numpy())
 
-#siamese_model.save('siamesemodelv2.h5')
-
-
-siamese_model = tf.keras.models.load_model('siamesemodelv2.h5', custom_objects={'L1Dist': L1Dist, 'BinaryCrossentropy': tf.losses.BinaryCrossentropy })
-
-print(siamese_model.predict([test_input, test_val]))
+siamese_model.save('siamesemodelv2.h5')
 
 siamese_model.summary()
